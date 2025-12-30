@@ -248,14 +248,6 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     setRowPermissions(rowPermissions.filter((_, i) => i !== index));
   };
 
-  const handleFieldVisibilityChange = (fieldId: string, visible: boolean) => {
-    if (visible) {
-      setSelectedFields([...selectedFields, fieldId]);
-    } else {
-      setSelectedFields(selectedFields.filter(id => id !== fieldId));
-    }
-  };
-
   const isRevenueKnowledgeBase = selectedKnowledgeBaseDirectory === 'kb1-dir2';
   
   // 获取选中的目录信息
@@ -323,9 +315,13 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                         value={selectedKnowledgeBaseDirectory}
                         onChange={setSelectedKnowledgeBaseDirectory}
                         showSearch
-                        filterOption={(input, option) =>
-                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                        }
+                        filterOption={(input, option) => {
+                          const label = option?.label;
+                          if (typeof label === 'string') {
+                            return label.toLowerCase().includes(input.toLowerCase());
+                          }
+                          return false;
+                        }}
                       >
                         {getAllDirectories.map(dir => (
                           <Select.Option key={dir.id} value={dir.id} label={dir.fullPath}>

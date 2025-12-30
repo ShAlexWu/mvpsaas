@@ -187,16 +187,14 @@ export const mockDataSources: DataSource[] = [
 export const mockSyncTasks: SyncTask[] = [
   {
     id: 'task1',
-    name: '2002949666209021952',
-    connect_type: '手动上传',
+    name: '同步飞书文档',
     status: 'success',
     progress: 100,
     startTime: '2024-01-15 10:30:00'
   },
   {
     id: 'task2',
-    name: '2002949666227654132',
-    connect_type: '连接器',
+    name: '上传本地文件',
     status: 'running',
     progress: 65,
     startTime: '2024-01-15 14:20:00'

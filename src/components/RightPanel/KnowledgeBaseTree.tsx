@@ -295,7 +295,6 @@ const KnowledgeBaseTree: React.FC<KnowledgeBaseTreeProps> = ({
                 <Dropdown
                   menu={{ items: menuItems }}
                   trigger={['click']}
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreOutlined 
                     style={{ 
@@ -304,7 +303,7 @@ const KnowledgeBaseTree: React.FC<KnowledgeBaseTreeProps> = ({
                       marginLeft: '8px',
                       opacity: 0.6
                     }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   />
                 </Dropdown>
               </div>

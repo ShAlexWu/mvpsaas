@@ -2,8 +2,6 @@ import React from 'react';
 import { Table, DatePicker, Select, Button, Space } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { mockLogs } from '../../mock/data';
-import type { Log } from '../../mock/data';
-import dayjs from 'dayjs';
 
 interface LogsProps {
   onBackToChat: () => void;

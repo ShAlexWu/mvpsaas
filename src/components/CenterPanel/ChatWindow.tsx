@@ -16,7 +16,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   messages, 
   onSendMessage,
   onNavigateToDataManagement,
-  onNavigateToTemplate
+  onNavigateToTemplate: _onNavigateToTemplate
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
