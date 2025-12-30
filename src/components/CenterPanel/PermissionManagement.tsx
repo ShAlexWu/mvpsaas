@@ -493,7 +493,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                         </div>
                         <Select
                           mode="multiple"
-                          placeholder="选择可见此字段的用户组/用户（不选则所有已选用户可见）"
+                          placeholder="选择用户组/用户"
                           value={columnPermission.visibleUsersAndGroups}
                           onChange={(values) => {
                             const updated = [...columnPermissions];
@@ -517,15 +517,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                             </Select.Option>
                           ))}
                         </Select>
-                        {columnPermission.visibleUsersAndGroups.length === 0 && (
-                          <div style={{ 
-                            marginTop: '4px', 
-                            fontSize: '12px', 
-                            color: '#999'
-                          }}>
-                            提示：不选择则所有已选中的用户组/用户都可见此字段
-                          </div>
-                        )}
+                        
                       </div>
                     );
                   })}
@@ -538,10 +530,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                 size="small"
               >
                 <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
-                  {rowColumnPermissionUsers.length > 0 
-                    ? `为选中的用户组/用户设置数据过滤条件，符合条件的行将不可见：`
-                    : `为所有已选中的用户组/用户设置数据过滤条件，符合条件的行将不可见：`
-                  }
+                为用户组/用户设置数据过滤条件，符合条件的行将不可见：
                 </div>
                 {rowPermissions.length === 0 ? (
                   <div style={{ 
