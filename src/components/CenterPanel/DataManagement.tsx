@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, Table, Button, Space, Tag, Progress, Modal, Form, Input, Select, Upload, Tree, message } from 'antd';
 import { PlusOutlined, UploadOutlined, ReloadOutlined, FolderOutlined, DeleteOutlined } from '@ant-design/icons';
 import { mockDataSources, mockSyncTasks, mockFileDirectories } from '../../mock/data';
-import type { DataSource, SyncTask, FileDirectory, FileItem } from '../../mock/data';
+import type { SyncTask, FileDirectory, FileItem } from '../../mock/data';
 
 interface DataManagementProps {
   onBackToChat: () => void;
@@ -225,7 +225,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBackToChat }) => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: FileItem) => (
+      render: () => (
         <Button type="link" size="small" danger icon={<DeleteOutlined />}>
           删除
         </Button>

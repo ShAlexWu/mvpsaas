@@ -73,7 +73,7 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
       title: '文件名',
       dataIndex: 'name',
       key: 'name',
-      render: (text: string, record: KnowledgeBaseNode) => (
+      render: (text: string) => (
         <Space>
           <FileOutlined style={{ color: '#52c41a' }} />
           {text}

@@ -65,7 +65,7 @@ const KnowledgeBuildTasks: React.FC<KnowledgeBuildTasksProps> = ({ onBackToChat 
     });
 
     const dirMap = new Map<string, FileItem[]>();
-    fileMap.forEach((file, id) => {
+    fileMap.forEach((file) => {
       if (!dirMap.has(file.directoryId)) {
         dirMap.set(file.directoryId, []);
       }
@@ -85,9 +85,9 @@ const KnowledgeBuildTasks: React.FC<KnowledgeBuildTasksProps> = ({ onBackToChat 
   };
 
   const handlePauseResume = (task: KnowledgeBuildTask) => {
-    const updated = tasks.map(t => 
+    const updated: KnowledgeBuildTask[] = tasks.map(t => 
       t.id === task.id 
-        ? { ...t, status: t.status === 'running' ? 'paused' : 'running' }
+        ? { ...t, status: (t.status === 'running' ? 'paused' : 'running') as KnowledgeBuildTask['status'] }
         : t
     );
     setTasks(updated);

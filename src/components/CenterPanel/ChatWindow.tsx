@@ -10,6 +10,8 @@ interface ChatWindowProps {
   onNavigateToTemplate?: (templateType: 'qa' | 'analysis') => void;
 }
 
+// 注意：onNavigateToTemplate 参数保留用于未来功能扩展
+
 const ChatWindow: React.FC<ChatWindowProps> = ({ 
   messages, 
   onSendMessage,
