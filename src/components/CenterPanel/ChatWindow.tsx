@@ -16,7 +16,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   messages, 
   onSendMessage,
   onNavigateToDataManagement,
-  onNavigateToTemplate: _onNavigateToTemplate
+  onNavigateToTemplate
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
@@ -185,19 +185,33 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     padding: '8px 12px',
                     height: 'auto',
                     fontSize: '12px'
-                  }}>
+                  }}
+                  onClick={() => {
+                    if (onNavigateToTemplate) {
+                      onNavigateToTemplate('qa');
+                    }
+                    setShowTemplateMenu(false);
+                  }}
+                >
                   知识问答
                 </Button>
                 <Button
                   type="text"
-                  block
+                  block 
                   style={{ 
                     textAlign: 'left',
                     padding: '8px 12px',
                     height: 'auto',
                     fontSize: '12px',
                     borderTop: '1px solid #f0f0f0'
-                  }}>
+                  }}
+                  onClick={() => {
+                    if (onNavigateToTemplate) {
+                      onNavigateToTemplate('analysis');
+                    }
+                    setShowTemplateMenu(false);
+                  }}
+                >
                   数据分析
                 </Button>
               </div>

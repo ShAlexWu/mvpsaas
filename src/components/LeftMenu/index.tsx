@@ -73,3 +73,4 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ currentMenu, onMenuClick }) => {
 
 export default LeftMenu;
 
+
