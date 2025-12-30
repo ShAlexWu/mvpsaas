@@ -15,6 +15,8 @@ interface CenterPanelProps {
   onSendMessage: (content: string) => void;
   onBackToChat: () => void;
   selectedKnowledgeBaseNode: string | null;
+  onNavigateToDataManagement?: () => void;
+  onNavigateToTemplate?: (templateType: 'qa' | 'analysis') => void;
 }
 
 const CenterPanel: React.FC<CenterPanelProps> = ({
@@ -22,10 +24,19 @@ const CenterPanel: React.FC<CenterPanelProps> = ({
   messages,
   onSendMessage,
   onBackToChat,
-  selectedKnowledgeBaseNode
+  selectedKnowledgeBaseNode,
+  onNavigateToDataManagement,
+  onNavigateToTemplate
 }) => {
   if (currentView === 'chat') {
-    return <ChatWindow messages={messages} onSendMessage={onSendMessage} />;
+    return (
+      <ChatWindow 
+        messages={messages} 
+        onSendMessage={onSendMessage}
+        onNavigateToDataManagement={onNavigateToDataManagement}
+        onNavigateToTemplate={onNavigateToTemplate}
+      />
+    );
   }
 
   if (currentView === 'knowledge-base-management') {

@@ -1,20 +1,45 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Input, Button, message } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { Input, Button } from 'antd';
+import { SendOutlined, DatabaseOutlined, AppstoreOutlined } from '@ant-design/icons';
 import type { Message } from '../../types';
 
 interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
+  onNavigateToDataManagement?: () => void;
+  onNavigateToTemplate?: (templateType: 'qa' | 'analysis') => void;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ 
+  messages, 
+  onSendMessage,
+  onNavigateToDataManagement,
+  onNavigateToTemplate
+}) => {
   const [inputValue, setInputValue] = useState('');
+  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // 点击外部关闭模板菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showTemplateMenu && !target.closest('.template-menu-container')) {
+        setShowTemplateMenu(false);
+      }
+    };
+
+    if (showTemplateMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showTemplateMenu]);
 
   const handleSend = () => {
     if (!inputValue.trim()) {
@@ -93,26 +118,113 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage }) => {
       <div style={{ 
         padding: '16px', 
         borderTop: '1px solid #e8e8e8',
-        backgroundColor: '#fff',
-        display: 'flex',
-        gap: '8px'
+        backgroundColor: '#fff'
       }}>
-        <Input.TextArea
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="输入消息... (Shift+Enter 换行)"
-          autoSize={{ minRows: 1, maxRows: 4 }}
-          style={{ flex: 1 }}
-        />
-        <Button
-          type="primary"
-          icon={<SendOutlined />}
-          onClick={handleSend}
-          style={{ alignSelf: 'flex-end' }}
-        >
-          发送
-        </Button>
+        {/* 快捷入口 */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          marginBottom: '8px',
+          position: 'relative'
+        }}>
+          <Button
+            type="text"
+            size="small"
+            icon={<DatabaseOutlined />}
+            onClick={() => {
+              if (onNavigateToDataManagement) {
+                onNavigateToDataManagement();
+              }
+            }}
+            style={{ 
+              color: '#1890ff',
+              padding: '4px 8px',
+              height: 'auto',
+              fontSize: '12px'
+            }}
+          >
+            数据管理
+          </Button>
+          <div style={{ position: 'relative' }} className="template-menu-container">
+            <Button
+              type="text"
+              size="small"
+              icon={<AppstoreOutlined />}
+              onClick={() => setShowTemplateMenu(!showTemplateMenu)}
+              style={{ 
+                color: '#1890ff',
+                padding: '4px 8px',
+                height: 'auto',
+                fontSize: '12px'
+              }}
+            >
+              模板
+            </Button>
+            {showTemplateMenu && (
+              <div 
+                className="template-menu-container"
+                style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                marginBottom: '4px',
+                backgroundColor: '#fff',
+                border: '1px solid #e8e8e8',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                minWidth: '120px'
+              }}>
+                <Button
+                  type="text"
+                  block
+                  style={{ 
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    height: 'auto',
+                    fontSize: '12px'
+                  }}>
+                  知识问答
+                </Button>
+                <Button
+                  type="text"
+                  block
+                  style={{ 
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    height: 'auto',
+                    fontSize: '12px',
+                    borderTop: '1px solid #f0f0f0'
+                  }}>
+                  数据分析
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* 输入框和发送按钮 */}
+        <div style={{ 
+          display: 'flex',
+          gap: '8px'
+        }}>
+          <Input.TextArea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="输入消息... (Shift+Enter 换行)"
+            autoSize={{ minRows: 1, maxRows: 4 }}
+            style={{ flex: 1 }}
+            onFocus={() => setShowTemplateMenu(false)}
+          />
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            onClick={handleSend}
+            style={{ alignSelf: 'flex-end' }}
+          >
+            发送
+          </Button>
+        </div>
       </div>
     </div>
   );

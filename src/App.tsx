@@ -106,6 +106,21 @@ const App: React.FC = () => {
           onSendMessage={handleSendMessage}
           onBackToChat={handleBackToChat}
           selectedKnowledgeBaseNode={selectedKnowledgeBaseNode}
+          onNavigateToDataManagement={() => {
+            setCurrentView('data-management');
+            setCurrentMenu('data-management');
+          }}
+          onNavigateToTemplate={(templateType) => {
+            // 切换到智能体管理页面，并可以传递模板类型
+            setCurrentView('agent-management');
+            setCurrentMenu('agent-management');
+            // 这里可以根据模板类型做进一步处理，比如打开模板选择弹窗
+            if (templateType === 'qa') {
+              // 可以设置状态来打开知识问答模板
+            } else if (templateType === 'analysis') {
+              // 可以设置状态来打开数据分析模板
+            }
+          }}
         />
       </Content>
       <Sider width={300} style={{ backgroundColor: '#fff' }}>
