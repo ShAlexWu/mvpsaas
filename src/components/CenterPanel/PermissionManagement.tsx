@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Tabs, Table, Button, Space, Tag, Tree, Select, Modal, Checkbox, message, Card, Divider } from 'antd';
+import { Tabs, Table, Button, Space, Tag, Tree, Select, Modal, message, Card, Divider } from 'antd';
 import { mockKnowledgeBases } from '../../mock/data';
 import type { KnowledgeBaseNode } from '../../mock/data';
 
@@ -26,12 +26,20 @@ interface TableField {
   visible: boolean;
 }
 
+interface TableInfo {
+  id: string;
+  name: string;
+  fields: TableField[];
+}
+
 interface ColumnPermission {
+  tableId: string;
   fieldId: string;
-  visibleUsersAndGroups: string[]; // 可见此字段的用户组/用户
+  visibleUsersAndGroups: string[]; // 不可见此字段的用户组/用户
 }
 
 interface RowPermission {
+  tableId: string;
   field: string;
   operator: 'equals' | 'not_equals' | 'in' | 'not_in';
   values: string[];
@@ -43,9 +51,9 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
   const [assignPermissionModalVisible, setAssignPermissionModalVisible] = useState(false);
   const [selectedUsersAndGroups, setSelectedUsersAndGroups] = useState<string[]>([]);
   const [showRowColumnPermission, setShowRowColumnPermission] = useState(false);
+  const [selectedTableId, setSelectedTableId] = useState<string>(''); // 当前选中的表
   const [columnPermissions, setColumnPermissions] = useState<ColumnPermission[]>([]); // 列级权限：每个字段关联的用户组/用户
-  const [rowColumnPermissionUsers, setRowColumnPermissionUsers] = useState<string[]>([]); // 应用行列级权限的用户组/用户
-  const [rowPermissions, setRowPermissions] = useState<RowPermission[]>([]);
+  const [rowPermissions, setRowPermissions] = useState<RowPermission[]>([]); // 行级权限
 
   // 提取所有知识库目录（包括知识库下的目录）
   const getAllDirectories = useMemo(() => {
@@ -124,8 +132,37 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     { id: 'payment', name: '付款方式', type: 'string', visible: true }
   ];
 
-  // 销售区域选项
-  const regionOptions = ['南区', '北区', '东区', '西区'];
+  // Mock表数据
+  const mockTables: TableInfo[] = [
+    {
+      id: 'table1',
+      name: '营收明细表',
+      fields: financialTableFields
+    },
+    {
+      id: 'table2',
+      name: '成本明细表',
+      fields: [
+        { id: 'date', name: '日期', type: 'date', visible: true },
+        { id: 'costType', name: '成本类型', type: 'string', visible: true },
+        { id: 'amount', name: '金额', type: 'number', visible: true },
+        { id: 'department', name: '部门', type: 'string', visible: true },
+        { id: 'project', name: '项目', type: 'string', visible: true }
+      ]
+    },
+    {
+      id: 'table3',
+      name: '客户信息表',
+      fields: [
+        { id: 'customerName', name: '客户名称', type: 'string', visible: true },
+        { id: 'contact', name: '联系人', type: 'string', visible: true },
+        { id: 'phone', name: '电话', type: 'string', visible: true },
+        { id: 'address', name: '地址', type: 'string', visible: true },
+        { id: 'credit', name: '信用额度', type: 'number', visible: true }
+      ]
+    }
+  ];
+
 
   // 构建用户组/用户树数据
   const buildUserTreeData = (groups: UserGroup[]): any[] => {
@@ -225,15 +262,15 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     // 如果是营收相关知识库（kb1-dir2），显示行列级权限设置
     if (selectedKnowledgeBaseDirectory === 'kb1-dir2') {
       setShowRowColumnPermission(true);
-      // 初始化列级权限：为每个字段创建权限配置，默认所有已选用户可见
-      setColumnPermissions(financialTableFields.map(f => ({
-        fieldId: f.id,
-        visibleUsersAndGroups: []
-      })));
-      // 初始化行列级权限用户选择为空，需要用户从已选中的用户组/用户中选择
-      setRowColumnPermissionUsers([]);
+      // 初始化：默认选择第一个表
+      if (mockTables.length > 0) {
+        setSelectedTableId(mockTables[0].id);
+      }
+      setColumnPermissions([]);
+      setRowPermissions([]);
     } else {
       setShowRowColumnPermission(false);
+      setSelectedTableId('');
     }
   };
 
@@ -245,14 +282,29 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     message.success('权限分配成功');
     setAssignPermissionModalVisible(false);
     setSelectedUsersAndGroups([]);
-    setSelectedFields([]);
+    setColumnPermissions([]);
     setRowPermissions([]);
+    setSelectedTableId('');
   };
 
   const handleAddRowPermission = () => {
+    if (!selectedTableId) {
+      message.warning('请先选择要配置的表');
+      return;
+    }
+    const currentTable = mockTables.find(t => t.id === selectedTableId);
+    const defaultField = currentTable?.fields.find(f => f.type === 'string')?.id || 
+                         (currentTable?.fields[0]?.id || '');
+    
     setRowPermissions([
       ...rowPermissions,
-      { field: 'region', operator: 'not_in', values: [], targetUsersAndGroups: [] }
+      { 
+        tableId: selectedTableId,
+        field: defaultField, 
+        operator: 'not_in', 
+        values: [], 
+        targetUsersAndGroups: [] 
+      }
     ]);
   };
 
@@ -412,9 +464,9 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
           setAssignPermissionModalVisible(false);
           setSelectedUsersAndGroups([]);
           setColumnPermissions([]);
-          setRowColumnPermissionUsers([]);
           setRowPermissions([]);
           setShowRowColumnPermission(false);
+          setSelectedTableId('');
         }}
         width={900}
         okText="保存"
@@ -447,12 +499,41 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
             <Divider />
             <div style={{ marginBottom: '24px' }}>
               <div style={{ marginBottom: '16px', fontWeight: 'bold', fontSize: '16px' }}>
-                （可选）行列级权限设置（营收信息表）
+                （可选）行列级权限设置
               </div>
               
-             
-              
-              {/* 列级权限 */}
+              {/* 表选择 */}
+              <Card 
+                title="选择表" 
+                size="small"
+                style={{ marginBottom: '16px' }}
+              >
+                <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
+                  选择需要设置行列级权限的表：
+                </div>
+                <Select
+                  placeholder="请选择表"
+                  value={selectedTableId}
+                  onChange={(value) => {
+                    setSelectedTableId(value);
+                    // 切换表时清空该表的权限配置（可选，也可以保留）
+                    // setColumnPermissions([]);
+                    // setRowPermissions([]);
+                  }}
+                  style={{ width: '100%' }}
+                >
+                  {mockTables.map(table => (
+                    <Select.Option key={table.id} value={table.id}>
+                      {table.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Card>
+
+              {/* 列级权限和行级权限（基于当前选中的表） */}
+              {selectedTableId && (
+                <>
+                  {/* 列级权限 */}
               <Card 
                 title="列级权限 - 控制字段可见性" 
                 size="small"
@@ -462,11 +543,18 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                   为每个字段设置不可见的用户组/用户：
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {financialTableFields.map(field => {
-                    const columnPermission = columnPermissions.find(cp => cp.fieldId === field.id) || {
-                      fieldId: field.id,
-                      visibleUsersAndGroups: []
-                    };
+                  {(() => {
+                    const currentTable = mockTables.find(t => t.id === selectedTableId);
+                    if (!currentTable) return null;
+                    
+                    return currentTable.fields.map(field => {
+                      const columnPermission = columnPermissions.find(
+                        cp => cp.tableId === selectedTableId && cp.fieldId === field.id
+                      ) || {
+                        tableId: selectedTableId,
+                        fieldId: field.id,
+                        visibleUsersAndGroups: []
+                      };
                     
                     return (
                       <div 
@@ -497,11 +585,14 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                           value={columnPermission.visibleUsersAndGroups}
                           onChange={(values) => {
                             const updated = [...columnPermissions];
-                            const index = updated.findIndex(cp => cp.fieldId === field.id);
+                            const index = updated.findIndex(
+                              cp => cp.tableId === selectedTableId && cp.fieldId === field.id
+                            );
                             if (index >= 0) {
                               updated[index].visibleUsersAndGroups = values;
                             } else {
                               updated.push({
+                                tableId: selectedTableId,
                                 fieldId: field.id,
                                 visibleUsersAndGroups: values
                               });
@@ -520,9 +611,12 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                         
                       </div>
                     );
-                  })}
+                  });
+                  })()}
                 </div>
               </Card>
+              </>
+              )}
 
               {/* 行级权限 */}
               <Card 
@@ -532,19 +626,37 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                 <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
                 为用户组/用户设置数据过滤条件，符合条件的行将不可见：
                 </div>
-                {rowPermissions.length === 0 ? (
-                  <div style={{ 
-                    padding: '20px', 
-                    textAlign: 'center', 
-                    color: '#999',
-                    border: '1px dashed #e8e8e8',
-                    borderRadius: '4px'
-                  }}>
-                    暂无行级权限设置
-                  </div>
-                ) : (
-                  <div style={{ marginBottom: '12px' }}>
-                    {rowPermissions.map((permission, index) => (
+                {(() => {
+                  const currentTablePermissions = rowPermissions.filter(
+                    p => p.tableId === selectedTableId
+                  );
+                  
+                  if (currentTablePermissions.length === 0) {
+                    return (
+                      <div style={{ 
+                        padding: '20px', 
+                        textAlign: 'center', 
+                        color: '#999',
+                        border: '1px dashed #e8e8e8',
+                        borderRadius: '4px'
+                      }}>
+                        暂无行级权限设置
+                      </div>
+                    );
+                  }
+                  
+                  const currentTable = mockTables.find(t => t.id === selectedTableId);
+                  if (!currentTable) return null;
+                  
+                  return (
+                    <div style={{ marginBottom: '12px' }}>
+                      {currentTablePermissions.map((permission, index) => {
+                        const globalIndex = rowPermissions.findIndex(
+                          p => p.tableId === permission.tableId && 
+                               p.field === permission.field &&
+                               p.operator === permission.operator
+                        );
+                        return (
                       <div 
                         key={index}
                         style={{ 
@@ -578,7 +690,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                             value={permission.operator}
                             onChange={(value) => {
                               const updated = [...rowPermissions];
-                              updated[index].operator = value;
+                              updated[globalIndex].operator = value;
                               setRowPermissions(updated);
                             }}
                             style={{ width: '120px' }}
@@ -593,29 +705,35 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                             value={permission.values}
                             onChange={(values) => {
                               const updated = [...rowPermissions];
-                              updated[index].values = values;
+                              updated[globalIndex].values = values;
                               setRowPermissions(updated);
                             }}
                             style={{ flex: 1 }}
                             placeholder="选择值"
                           >
-                            {permission.field === 'region' && regionOptions.map(region => (
-                              <Select.Option key={region} value={region}>{region}</Select.Option>
-                            ))}
-                            {permission.field === 'product' && ['产品A', '产品B', '产品C'].map(product => (
-                              <Select.Option key={product} value={product}>{product}</Select.Option>
-                            ))}
-                            {permission.field === 'customer' && ['客户1', '客户2', '客户3'].map(customer => (
-                              <Select.Option key={customer} value={customer}>{customer}</Select.Option>
-                            ))}
-                            {permission.field === 'salesperson' && ['销售1', '销售2', '销售3'].map(salesperson => (
-                              <Select.Option key={salesperson} value={salesperson}>{salesperson}</Select.Option>
-                            ))}
+                            {/* 根据字段类型显示不同的选项 */}
+                            {(() => {
+                              const field = currentTable.fields.find(f => f.id === permission.field);
+                              if (!field) return null;
+                              
+                              // 这里可以根据实际需求添加更多选项
+                              // 目前使用简单的mock数据
+                              if (field.type === 'string') {
+                                return ['选项1', '选项2', '选项3'].map(opt => (
+                                  <Select.Option key={opt} value={opt}>{opt}</Select.Option>
+                                ));
+                              } else if (field.type === 'number') {
+                                return ['100', '200', '300'].map(opt => (
+                                  <Select.Option key={opt} value={opt}>{opt}</Select.Option>
+                                ));
+                              }
+                              return null;
+                            })()}
                           </Select>
                           <Button
                             type="link"
                             danger
-                            onClick={() => handleRemoveRowPermission(index)}
+                            onClick={() => handleRemoveRowPermission(globalIndex)}
                           >
                             删除
                           </Button>
@@ -636,7 +754,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                             value={permission.targetUsersAndGroups}
                             onChange={(values) => {
                               const updated = [...rowPermissions];
-                              updated[index].targetUsersAndGroups = values;
+                              updated[globalIndex].targetUsersAndGroups = values;
                               setRowPermissions(updated);
                             }}
                             style={{ width: '100%' }}
@@ -650,9 +768,11 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                           </Select>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
                 <Button 
                   type="dashed" 
                   onClick={handleAddRowPermission}
