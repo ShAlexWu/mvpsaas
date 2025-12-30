@@ -145,7 +145,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBackToChat }) => {
       key: 'name'
     },
     {
-        title: '连接类型',
+        title: '同步方式',
         dataIndex: 'connect_type',
         key: 'connect_type'
       },

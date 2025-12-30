@@ -196,7 +196,7 @@ export const mockSyncTasks: SyncTask[] = [
   {
     id: 'task2',
     name: '2002949666209021952',
-    connect_type: '连接器连接',
+    connect_type: ',
     status: 'running',
     progress: 65,
     startTime: '2024-01-15 14:20:00'
