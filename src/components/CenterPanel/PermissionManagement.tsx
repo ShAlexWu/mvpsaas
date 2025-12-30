@@ -459,7 +459,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                 style={{ marginBottom: '16px' }}
               >
                 <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
-                  为每个字段设置可见的用户组/用户，未设置的用户组/用户将不可见该字段：
+                  为每个字段设置不可见的用户组/用户：
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {financialTableFields.map(field => {
