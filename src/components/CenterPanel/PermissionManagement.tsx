@@ -26,10 +26,16 @@ interface TableField {
   visible: boolean;
 }
 
+interface ColumnPermission {
+  fieldId: string;
+  visibleUsersAndGroups: string[]; // 可见此字段的用户组/用户
+}
+
 interface RowPermission {
   field: string;
   operator: 'equals' | 'not_equals' | 'in' | 'not_in';
   values: string[];
+  targetUsersAndGroups: string[]; // 应用此权限的用户组/用户
 }
 
 const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToChat }) => {
@@ -37,7 +43,8 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
   const [assignPermissionModalVisible, setAssignPermissionModalVisible] = useState(false);
   const [selectedUsersAndGroups, setSelectedUsersAndGroups] = useState<string[]>([]);
   const [showRowColumnPermission, setShowRowColumnPermission] = useState(false);
-  const [selectedFields, setSelectedFields] = useState<string[]>([]);
+  const [columnPermissions, setColumnPermissions] = useState<ColumnPermission[]>([]); // 列级权限：每个字段关联的用户组/用户
+  const [rowColumnPermissionUsers, setRowColumnPermissionUsers] = useState<string[]>([]); // 应用行列级权限的用户组/用户
   const [rowPermissions, setRowPermissions] = useState<RowPermission[]>([]);
 
   // 提取所有知识库目录（包括知识库下的目录）
@@ -218,8 +225,13 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     // 如果是营收相关知识库（kb1-dir2），显示行列级权限设置
     if (selectedKnowledgeBaseDirectory === 'kb1-dir2') {
       setShowRowColumnPermission(true);
-      // 初始化字段选择（默认全选）
-      setSelectedFields(financialTableFields.map(f => f.id));
+      // 初始化列级权限：为每个字段创建权限配置，默认所有已选用户可见
+      setColumnPermissions(financialTableFields.map(f => ({
+        fieldId: f.id,
+        visibleUsersAndGroups: []
+      })));
+      // 初始化行列级权限用户选择为空，需要用户从已选中的用户组/用户中选择
+      setRowColumnPermissionUsers([]);
     } else {
       setShowRowColumnPermission(false);
     }
@@ -240,8 +252,35 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
   const handleAddRowPermission = () => {
     setRowPermissions([
       ...rowPermissions,
-      { field: 'region', operator: 'not_in', values: [] }
+      { field: 'region', operator: 'not_in', values: [], targetUsersAndGroups: [] }
     ]);
+  };
+
+  // 获取已选中的用户组/用户列表（用于行列级权限选择）
+  const getSelectedUsersAndGroupsList = (): Array<{ key: string; label: string; type: 'group' | 'user' }> => {
+    const result: Array<{ key: string; label: string; type: 'group' | 'user' }> = [];
+    
+    selectedUsersAndGroups.forEach(key => {
+      if (key.startsWith('group-')) {
+        const groupId = key.replace('group-', '');
+        const group = mockUserGroups.find(g => g.id === groupId);
+        if (group) {
+          result.push({ key, label: group.name, type: 'group' });
+        }
+      } else if (key.startsWith('user-')) {
+        const userId = key.replace('user-', '');
+        // 查找用户
+        for (const group of mockUserGroups) {
+          const user = group.users?.find(u => u.id === userId);
+          if (user) {
+            result.push({ key, label: `${user.name} (${group.name})`, type: 'user' });
+            break;
+          }
+        }
+      }
+    });
+    
+    return result;
   };
 
   const handleRemoveRowPermission = (index: number) => {
@@ -372,7 +411,8 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
         onCancel={() => {
           setAssignPermissionModalVisible(false);
           setSelectedUsersAndGroups([]);
-          setSelectedFields([]);
+          setColumnPermissions([]);
+          setRowColumnPermissionUsers([]);
           setRowPermissions([]);
           setShowRowColumnPermission(false);
         }}
@@ -402,13 +442,15 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
         </div>
 
         {/* 行列级权限设置（仅营收相关知识库显示） */}
-        {isRevenueKnowledgeBase && showRowColumnPermission && (
+        {isRevenueKnowledgeBase && showRowColumnPermission && selectedUsersAndGroups.length > 0 && (
           <>
             <Divider />
             <div style={{ marginBottom: '24px' }}>
               <div style={{ marginBottom: '16px', fontWeight: 'bold', fontSize: '16px' }}>
-                行列级权限设置（营收信息表）
+                （可选）行列级权限设置（营收信息表）
               </div>
+              
+             
               
               {/* 列级权限 */}
               <Card 
@@ -417,26 +459,77 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                 style={{ marginBottom: '16px' }}
               >
                 <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
-                  选择用户可以查看的字段，未选中的字段将不可见：
+                  为每个字段设置可见的用户组/用户，未设置的用户组/用户将不可见该字段：
                 </div>
-                <Checkbox.Group
-                  value={selectedFields}
-                  onChange={(values) => {
-                    setSelectedFields(values as string[]);
-                  }}
-                  style={{ width: '100%' }}
-                >
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                    {financialTableFields.map(field => (
-                      <Checkbox key={field.id} value={field.id}>
-                        <span>{field.name}</span>
-                        <Tag style={{ marginLeft: '8px', fontSize: '11px' }}>
-                          {field.type === 'date' ? '日期' : field.type === 'number' ? '数值' : '文本'}
-                        </Tag>
-                      </Checkbox>
-                    ))}
-                  </div>
-                </Checkbox.Group>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {financialTableFields.map(field => {
+                    const columnPermission = columnPermissions.find(cp => cp.fieldId === field.id) || {
+                      fieldId: field.id,
+                      visibleUsersAndGroups: []
+                    };
+                    
+                    return (
+                      <div 
+                        key={field.id}
+                        style={{ 
+                          padding: '12px', 
+                          border: '1px solid #e8e8e8', 
+                          borderRadius: '4px',
+                          backgroundColor: '#fafafa'
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          marginBottom: '8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: 'bold' }}>{field.name}</span>
+                            <Tag style={{ fontSize: '11px' }}>
+                              {field.type === 'date' ? '日期' : field.type === 'number' ? '数值' : '文本'}
+                            </Tag>
+                          </div>
+                        </div>
+                        <Select
+                          mode="multiple"
+                          placeholder="选择可见此字段的用户组/用户（不选则所有已选用户可见）"
+                          value={columnPermission.visibleUsersAndGroups}
+                          onChange={(values) => {
+                            const updated = [...columnPermissions];
+                            const index = updated.findIndex(cp => cp.fieldId === field.id);
+                            if (index >= 0) {
+                              updated[index].visibleUsersAndGroups = values;
+                            } else {
+                              updated.push({
+                                fieldId: field.id,
+                                visibleUsersAndGroups: values
+                              });
+                            }
+                            setColumnPermissions(updated);
+                          }}
+                          style={{ width: '100%' }}
+                          size="small"
+                        >
+                          {getSelectedUsersAndGroupsList().map(item => (
+                            <Select.Option key={item.key} value={item.key}>
+                              {item.type === 'group' ? '👥 ' : '👤 '}{item.label}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                        {columnPermission.visibleUsersAndGroups.length === 0 && (
+                          <div style={{ 
+                            marginTop: '4px', 
+                            fontSize: '12px', 
+                            color: '#999'
+                          }}>
+                            提示：不选择则所有已选中的用户组/用户都可见此字段
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </Card>
 
               {/* 行级权限 */}
@@ -445,7 +538,10 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                 size="small"
               >
                 <div style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
-                  设置数据过滤条件，符合条件的行将不可见：
+                  {rowColumnPermissionUsers.length > 0 
+                    ? `为选中的用户组/用户设置数据过滤条件，符合条件的行将不可见：`
+                    : `为所有已选中的用户组/用户设置数据过滤条件，符合条件的行将不可见：`
+                  }
                 </div>
                 {rowPermissions.length === 0 ? (
                   <div style={{ 
@@ -466,71 +562,104 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                           padding: '12px', 
                           border: '1px solid #e8e8e8', 
                           borderRadius: '4px',
-                          marginBottom: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px'
+                          marginBottom: '8px'
                         }}
                       >
-                        <Select
-                          value={permission.field}
-                          onChange={(value) => {
-                            const updated = [...rowPermissions];
-                            updated[index].field = value;
-                            setRowPermissions(updated);
-                          }}
-                          style={{ width: '150px' }}
-                        >
-                          <Select.Option value="region">销售区域</Select.Option>
-                          <Select.Option value="product">产品类别</Select.Option>
-                          <Select.Option value="customer">客户名称</Select.Option>
-                          <Select.Option value="salesperson">销售人员</Select.Option>
-                        </Select>
-                        <Select
-                          value={permission.operator}
-                          onChange={(value) => {
-                            const updated = [...rowPermissions];
-                            updated[index].operator = value;
-                            setRowPermissions(updated);
-                          }}
-                          style={{ width: '120px' }}
-                        >
-                          <Select.Option value="equals">等于</Select.Option>
-                          <Select.Option value="not_equals">不等于</Select.Option>
-                          <Select.Option value="in">包含</Select.Option>
-                          <Select.Option value="not_in">不包含</Select.Option>
-                        </Select>
-                        <Select
-                          mode="multiple"
-                          value={permission.values}
-                          onChange={(values) => {
-                            const updated = [...rowPermissions];
-                            updated[index].values = values;
-                            setRowPermissions(updated);
-                          }}
-                          style={{ flex: 1 }}
-                          placeholder="选择值"
-                        >
-                          {permission.field === 'region' && regionOptions.map(region => (
-                            <Select.Option key={region} value={region}>{region}</Select.Option>
-                          ))}
-                          {permission.field === 'product' && ['产品A', '产品B', '产品C'].map(product => (
-                            <Select.Option key={product} value={product}>{product}</Select.Option>
-                          ))}
-                          {permission.field === 'customer' && ['客户1', '客户2', '客户3'].map(customer => (
-                            <Select.Option key={customer} value={customer}>{customer}</Select.Option>
-                          ))}
-                          {permission.field === 'salesperson' && ['销售1', '销售2', '销售3'].map(salesperson => (
-                            <Select.Option key={salesperson} value={salesperson}>{salesperson}</Select.Option>
-                          ))}
-                        </Select>
-                        <Button
-                          type="link"
-                          danger
-                          onClick={() => handleRemoveRowPermission(index)}
-                        >
-                          删除
-                        </Button>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '12px',
+                          marginBottom: '8px'
+                        }}>
+                          <Select
+                            value={permission.field}
+                            onChange={(value) => {
+                              const updated = [...rowPermissions];
+                              updated[index].field = value;
+                              setRowPermissions(updated);
+                            }}
+                            style={{ width: '150px' }}
+                          >
+                            <Select.Option value="region">销售区域</Select.Option>
+                            <Select.Option value="product">产品类别</Select.Option>
+                            <Select.Option value="customer">客户名称</Select.Option>
+                            <Select.Option value="salesperson">销售人员</Select.Option>
+                          </Select>
+                          <Select
+                            value={permission.operator}
+                            onChange={(value) => {
+                              const updated = [...rowPermissions];
+                              updated[index].operator = value;
+                              setRowPermissions(updated);
+                            }}
+                            style={{ width: '120px' }}
+                          >
+                            <Select.Option value="equals">等于</Select.Option>
+                            <Select.Option value="not_equals">不等于</Select.Option>
+                            <Select.Option value="in">包含</Select.Option>
+                            <Select.Option value="not_in">不包含</Select.Option>
+                          </Select>
+                          <Select
+                            mode="multiple"
+                            value={permission.values}
+                            onChange={(values) => {
+                              const updated = [...rowPermissions];
+                              updated[index].values = values;
+                              setRowPermissions(updated);
+                            }}
+                            style={{ flex: 1 }}
+                            placeholder="选择值"
+                          >
+                            {permission.field === 'region' && regionOptions.map(region => (
+                              <Select.Option key={region} value={region}>{region}</Select.Option>
+                            ))}
+                            {permission.field === 'product' && ['产品A', '产品B', '产品C'].map(product => (
+                              <Select.Option key={product} value={product}>{product}</Select.Option>
+                            ))}
+                            {permission.field === 'customer' && ['客户1', '客户2', '客户3'].map(customer => (
+                              <Select.Option key={customer} value={customer}>{customer}</Select.Option>
+                            ))}
+                            {permission.field === 'salesperson' && ['销售1', '销售2', '销售3'].map(salesperson => (
+                              <Select.Option key={salesperson} value={salesperson}>{salesperson}</Select.Option>
+                            ))}
+                          </Select>
+                          <Button
+                            type="link"
+                            danger
+                            onClick={() => handleRemoveRowPermission(index)}
+                          >
+                            删除
+                          </Button>
+                        </div>
+                        {/* 为每个行级权限条件选择应用的用户组/用户 */}
+                        <div style={{ 
+                          marginTop: '8px', 
+                          padding: '8px', 
+                          backgroundColor: '#fafafa', 
+                          borderRadius: '4px'
+                        }}>
+                          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                            应用此条件到：
+                          </div>
+                          <Select
+                            mode="multiple"
+                            placeholder="选择用户组/用户"
+                            value={permission.targetUsersAndGroups}
+                            onChange={(values) => {
+                              const updated = [...rowPermissions];
+                              updated[index].targetUsersAndGroups = values;
+                              setRowPermissions(updated);
+                            }}
+                            style={{ width: '100%' }}
+                            size="small"
+                          >
+                            {getSelectedUsersAndGroupsList().map(item => (
+                              <Select.Option key={item.key} value={item.key}>
+                                {item.type === 'group' ? '👥 ' : '👤 '}{item.label}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </div>
                       </div>
                     ))}
                   </div>
