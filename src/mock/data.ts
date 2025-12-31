@@ -185,8 +185,8 @@ export const mockAgents: Agent[] = [
   },
   {
     id: 'agent4',
-    name: '共享财务助手',
-    description: '共享的财务助手智能体',
+    name: '财务小助手',
+    description: '解答财务政策类问题、协助员工进行报销等财务相关操作',
     status: 'online',
     knowledgeBases: ['kb1'],
     type: 'composite',
@@ -195,8 +195,8 @@ export const mockAgents: Agent[] = [
   },
   {
     id: 'agent5',
-    name: '共享数据分析助手',
-    description: '共享的数据分析智能体',
+    name: '采购分析助手',
+    description: '分析采购数据、协助员工进行采购相关操作',
     status: 'online',
     knowledgeBases: ['kb2'],
     type: 'structured',
