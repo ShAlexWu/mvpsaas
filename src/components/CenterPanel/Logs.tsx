@@ -44,7 +44,7 @@ const Logs: React.FC<LogsProps> = ({ onBackToChat }) => {
         alignItems: 'center'
       }}>
         <h2 style={{ margin: 0 }}>操作日志</h2>
-        <Button onClick={onBackToChat}>返回对话</Button>
+        <Button onClick={onBackToChat}>返回系统对话</Button>
       </div>
       <div style={{ padding: '16px', borderBottom: '1px solid #e8e8e8' }}>
         <Space>

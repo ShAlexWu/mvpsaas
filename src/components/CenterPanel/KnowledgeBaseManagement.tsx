@@ -262,7 +262,7 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
               构建知识
             </Button>
           )}
-          <Button onClick={onBackToChat}>返回对话</Button>
+          <Button onClick={onBackToChat}>返回系统对话</Button>
         </Space>
       </div>
 

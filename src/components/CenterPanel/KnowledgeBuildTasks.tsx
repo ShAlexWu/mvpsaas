@@ -209,7 +209,7 @@ const KnowledgeBuildTasks: React.FC<KnowledgeBuildTasksProps> = ({ onBackToChat 
         alignItems: 'center'
       }}>
         <h2 style={{ margin: 0 }}>知识构建任务</h2>
-        <Button onClick={onBackToChat}>返回对话</Button>
+        <Button onClick={onBackToChat}>返回系统对话</Button>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
         <Table

@@ -82,7 +82,7 @@ const DataExploration: React.FC<DataExplorationProps> = ({ onBackToChat }) => {
             </Tag>
           )}
         </Space>
-        <Button onClick={onBackToChat}>返回对话</Button>
+        <Button onClick={onBackToChat}>返回系统对话</Button>
       </div>
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {selectedAgentId ? (

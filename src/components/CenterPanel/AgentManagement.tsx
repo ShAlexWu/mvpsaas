@@ -149,7 +149,7 @@ const AgentManagement: React.FC<AgentManagementProps> = ({ onBackToChat }) => {
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAgentModalVisible(true)}>
             新建智能体
           </Button>
-          <Button onClick={onBackToChat}>返回对话</Button>
+          <Button onClick={onBackToChat}>返回系统对话</Button>
         </Space>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>

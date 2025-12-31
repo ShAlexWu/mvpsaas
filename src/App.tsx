@@ -30,7 +30,7 @@ const App: React.FC = () => {
   const handleBackToChat = () => {
     setCurrentView('chat');
     setCurrentMenu(null);
-    // 返回对话时，不清除知识库节点选择，保持右侧选中状态
+    // 返回系统对话时，不清除知识库节点选择，保持右侧选中状态
   };
 
   const handleNodeSelect = (nodeId: string) => {
