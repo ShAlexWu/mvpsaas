@@ -17,6 +17,9 @@ export interface Agent {
   status: 'online' | 'offline';
   knowledgeBases: string[];
   type: 'unstructured' | 'structured' | 'composite';
+  owner?: string; // 所有者用户ID，如果为空则表示是模板
+  isShared?: boolean; // 是否被共享
+  isTemplate?: boolean; // 是否为模板
 }
 
 export interface DataSource {
@@ -156,7 +159,9 @@ export const mockAgents: Agent[] = [
     description: '帮助解答财务相关问题和数据分析',
     status: 'online',
     knowledgeBases: ['kb1'],
-    type: 'composite'
+    type: 'composite',
+    owner: 'current-user', // 当前用户的智能体
+    isShared: false
   },
   {
     id: 'agent2',
@@ -164,7 +169,9 @@ export const mockAgents: Agent[] = [
     description: '回答产品使用和故障排查问题',
     status: 'online',
     knowledgeBases: ['kb2'],
-    type: 'unstructured'
+    type: 'unstructured',
+    owner: 'current-user', // 当前用户的智能体
+    isShared: false
   },
   {
     id: 'agent3',
@@ -172,7 +179,47 @@ export const mockAgents: Agent[] = [
     description: '分析测试缺陷数据',
     status: 'offline',
     knowledgeBases: ['kb3'],
-    type: 'structured'
+    type: 'structured',
+    owner: 'current-user', // 当前用户的智能体
+    isShared: false
+  },
+  {
+    id: 'agent4',
+    name: '共享财务助手',
+    description: '共享的财务助手智能体',
+    status: 'online',
+    knowledgeBases: ['kb1'],
+    type: 'composite',
+    owner: 'user1',
+    isShared: true
+  },
+  {
+    id: 'agent5',
+    name: '共享数据分析助手',
+    description: '共享的数据分析智能体',
+    status: 'online',
+    knowledgeBases: ['kb2'],
+    type: 'structured',
+    owner: 'user2',
+    isShared: true
+  },
+  {
+    id: 'agent-template1',
+    name: '知识问答模板',
+    description: '通用的知识问答智能体模板',
+    status: 'online',
+    knowledgeBases: [],
+    type: 'unstructured',
+    isTemplate: true
+  },
+  {
+    id: 'agent-template2',
+    name: '数据分析模板',
+    description: '通用的数据分析智能体模板',
+    status: 'online',
+    knowledgeBases: [],
+    type: 'structured',
+    isTemplate: true
   }
 ];
 

@@ -11,6 +11,29 @@ interface DataExplorationProps {
 const DataExploration: React.FC<DataExplorationProps> = ({ onBackToChat }) => {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  // 获取共享的智能体和我的智能体
+  const currentUserId = 'current-user'; // Mock当前用户ID
+  const sharedAgents = mockAgents.filter(agent => agent.isShared && !agent.isTemplate && agent.status === 'online');
+  const myAgents = mockAgents.filter(agent => agent.owner === currentUserId && !agent.isTemplate && agent.status === 'online');
+  
+  // 构建多级菜单数据（使用OptGroup）
+  const agentSelectOptions = [
+    {
+      label: '共享的智能体',
+      options: sharedAgents.map(agent => ({
+        label: agent.name,
+        value: agent.id
+      }))
+    },
+    {
+      label: '我的智能体',
+      options: myAgents.map(agent => ({
+        label: agent.name,
+        value: agent.id
+      }))
+    }
+  ];
 
   const handleSendMessage = (content: string) => {
     const userMessage: Message = {
@@ -51,13 +74,8 @@ const DataExploration: React.FC<DataExplorationProps> = ({ onBackToChat }) => {
             placeholder="请选择智能体"
             value={selectedAgentId}
             onChange={setSelectedAgentId}
-          >
-            {mockAgents.filter(a => a.status === 'online').map(agent => (
-              <Select.Option key={agent.id} value={agent.id}>
-                {agent.name}
-              </Select.Option>
-            ))}
-          </Select>
+            options={agentSelectOptions}
+          />
           {selectedAgent && (
             <Tag color={selectedAgent.type === 'unstructured' ? 'blue' : selectedAgent.type === 'structured' ? 'green' : 'purple'}>
               {selectedAgent.type === 'unstructured' ? '知识问答' : selectedAgent.type === 'structured' ? '数据分析' : '复合探索'}
@@ -80,7 +98,7 @@ const DataExploration: React.FC<DataExplorationProps> = ({ onBackToChat }) => {
           }}>
             <div style={{ fontSize: '16px', color: '#999' }}>请先选择一个智能体开始数据探索</div>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', maxWidth: '800px' }}>
-              {mockAgents.filter(a => a.status === 'online').map(agent => (
+              {[...sharedAgents, ...myAgents].map(agent => (
                 <Card
                   key={agent.id}
                   hoverable

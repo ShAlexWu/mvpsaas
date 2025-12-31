@@ -8,6 +8,8 @@ interface AgentManagementProps {
   onBackToChat: () => void;
 }
 
+type AgentViewType = 'shared' | 'mine' | 'all' | 'templates';
+
 const AgentManagement: React.FC<AgentManagementProps> = ({ onBackToChat }) => {
   const [agentModalVisible, setAgentModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -15,6 +17,7 @@ const AgentManagement: React.FC<AgentManagementProps> = ({ onBackToChat }) => {
   const [shareEnabled, setShareEnabled] = useState(false);
   const [selectedUsersAndGroups, setSelectedUsersAndGroups] = useState<string[]>([]);
   const [autoGrantKnowledgeBaseAccess, setAutoGrantKnowledgeBaseAccess] = useState(true);
+  const [currentView, setCurrentView] = useState<AgentViewType>('shared');
 
   // Mock用户组和用户数据
   const mockUserGroupsTree = [
@@ -48,6 +51,23 @@ const AgentManagement: React.FC<AgentManagementProps> = ({ onBackToChat }) => {
       ]
     }
   ];
+
+  // 根据当前视图过滤智能体
+  const getFilteredAgents = (): Agent[] => {
+    const currentUserId = 'current-user'; // Mock当前用户ID
+    
+    switch (currentView) {
+      case 'shared':
+        return mockAgents.filter(agent => agent.isShared && !agent.isTemplate);
+      case 'mine':
+        return mockAgents.filter(agent => agent.owner === currentUserId && !agent.isTemplate);
+      case 'templates':
+        return mockAgents.filter(agent => agent.isTemplate);
+      case 'all':
+      default:
+        return mockAgents.filter(agent => !agent.isTemplate);
+    }
+  };
 
   const columns = [
     {
@@ -133,9 +153,79 @@ const AgentManagement: React.FC<AgentManagementProps> = ({ onBackToChat }) => {
         </Space>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+        {/* 分类链接 */}
+        <div style={{ 
+          marginBottom: '16px', 
+          paddingBottom: '12px',
+          borderBottom: '1px solid #e8e8e8',
+          display: 'flex',
+          gap: '24px'
+        }}>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentView('shared');
+            }}
+            style={{
+              color: currentView === 'shared' ? '#1890ff' : '#666',
+              textDecoration: currentView === 'shared' ? 'underline' : 'none',
+              fontWeight: currentView === 'shared' ? 'bold' : 'normal',
+              fontSize: '14px'
+            }}
+          >
+            共享的智能体
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentView('mine');
+            }}
+            style={{
+              color: currentView === 'mine' ? '#1890ff' : '#666',
+              textDecoration: currentView === 'mine' ? 'underline' : 'none',
+              fontWeight: currentView === 'mine' ? 'bold' : 'normal',
+              fontSize: '14px'
+            }}
+          >
+            我的智能体
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentView('all');
+            }}
+            style={{
+              color: currentView === 'all' ? '#1890ff' : '#666',
+              textDecoration: currentView === 'all' ? 'underline' : 'none',
+              fontWeight: currentView === 'all' ? 'bold' : 'normal',
+              fontSize: '14px'
+            }}
+          >
+            所有智能体
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentView('templates');
+            }}
+            style={{
+              color: currentView === 'templates' ? '#1890ff' : '#666',
+              textDecoration: currentView === 'templates' ? 'underline' : 'none',
+              fontWeight: currentView === 'templates' ? 'bold' : 'normal',
+              fontSize: '14px'
+            }}
+          >
+            智能体模板
+          </a>
+        </div>
+        
         <Table
           columns={columns}
-          dataSource={mockAgents}
+          dataSource={getFilteredAgents()}
           rowKey="id"
           pagination={false}
         />
