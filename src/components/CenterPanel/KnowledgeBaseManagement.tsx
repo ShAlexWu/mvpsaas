@@ -353,7 +353,7 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
                 <div>
                   <Card title="用户组/用户权限" style={{ marginBottom: '16px' }}>
                     <div style={{ marginBottom: '16px' }}>
-                      <Button type="primary">分配权限</Button>
+                      <Button type="primary">查看/分配权限</Button>
                     </div>
                     <div style={{ color: '#999', fontSize: '14px' }}>
                       当前权限设置：所有用户组/用户均可访问

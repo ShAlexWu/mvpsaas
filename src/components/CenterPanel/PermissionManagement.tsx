@@ -557,7 +557,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                         onClick={handleAssignPermission}
                         disabled={!selectedKnowledgeBaseDirectory}
                       >
-                        分配权限
+                        查看/分配权限
                       </Button>
                     </Space>
                   </div>
@@ -578,7 +578,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
                     </div>
                   )}
                   <div style={{ color: '#999', fontSize: '14px' }}>
-                    选择知识库目录后，可以为用户组/用户分配权限，支持行列级权限控制。
+                    选择知识库目录后，可以为用户组/用户分配权限，支持对结构化数据配置行列级权限。
                   </div>
                 </div>
               )
@@ -589,7 +589,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
 
       {/* 分配权限模态框 */}
       <Modal
-        title="分配权限"
+        title="查看/分配权限"
         open={assignPermissionModalVisible}
         onOk={handleSavePermission}
         onCancel={() => {
