@@ -317,12 +317,12 @@ const AgentManagement: React.FC<AgentManagementProps> = ({ onBackToChat }) => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
                         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                          自动获取知识库权限
+                          自动下发知识库权限
                         </div>
                         <div style={{ fontSize: '12px', color: '#999' }}>
                           {autoGrantKnowledgeBaseAccess 
-                            ? '被分享的用户自动获取该智能体关联的所有知识库的使用权限（限只读）'
-                            : '被分享的用户是否能获取智能体回复，取决于其是否有相关知识库的使用权限'
+                            ? '被分享的用户将会拥有该智能体关联的所有知识库的使用权限'
+                            : '被分享的用户是否能获取智能体回复，取决于其是否已经拥有相关知识库的使用权限'
                           }
                         </div>
                       </div>
