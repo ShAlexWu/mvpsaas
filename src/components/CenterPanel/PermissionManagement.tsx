@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Tabs, Table, Button, Space, Tag, Tree, Select, Modal, message, Card, Divider } from 'antd';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Tabs, Table, Button, Space, Tag, Tree, Select, Modal, message, Card, Divider, Input, Popconfirm } from 'antd';
+import { EditOutlined, UserAddOutlined, DeleteOutlined } from '@ant-design/icons';
 import { mockKnowledgeBases } from '../../mock/data';
 import type { KnowledgeBaseNode } from '../../mock/data';
 
@@ -54,6 +55,14 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
   const [selectedTableId, setSelectedTableId] = useState<string>(''); // 当前选中的表
   const [columnPermissions, setColumnPermissions] = useState<ColumnPermission[]>([]); // 列级权限：每个字段关联的用户组/用户
   const [rowPermissions, setRowPermissions] = useState<RowPermission[]>([]); // 行级权限
+  
+  // 用户组管理相关状态
+  const [userGroups, setUserGroups] = useState<UserGroup[]>([]);
+  const [editGroupModalVisible, setEditGroupModalVisible] = useState(false);
+  const [manageUsersModalVisible, setManageUsersModalVisible] = useState(false);
+  const [currentEditingGroup, setCurrentEditingGroup] = useState<UserGroup | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   // 提取所有知识库目录（包括知识库下的目录）
   const getAllDirectories = useMemo(() => {
@@ -85,38 +94,54 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     return directories;
   }, []);
 
-  // Mock用户组和用户数据
-  const mockUserGroups: UserGroup[] = [
-    {
-      id: 'group1',
-      name: '管理层',
-      users: [
-        { id: 'user1', name: '张三' }
-      ]
-    },
-    {
-      id: 'group2',
-      name: 'IT部',
-      users: [
-        { id: 'user2', name: '李四' }
-      ]
-    },
-    {
-      id: 'group3',
-      name: '财务部',
-      users: [
-        { id: 'user3', name: '王五' },
-        { id: 'user5', name: '孙七' }
-      ]
-    },
-    {
-      id: 'group4',
-      name: '产品部',
-      users: [
-        { id: 'user4', name: '赵六' }
-      ]
-    }
+  // Mock所有用户数据（用于添加到用户组）
+  const allUsers: User[] = [
+    { id: 'user1', name: '张三' },
+    { id: 'user2', name: '李四' },
+    { id: 'user3', name: '王五' },
+    { id: 'user4', name: '赵六' },
+    { id: 'user5', name: '孙七' },
+    { id: 'user6', name: '周八' },
+    { id: 'user7', name: '吴九' }
   ];
+
+  // 初始化用户组数据
+  useEffect(() => {
+    setUserGroups([
+      {
+        id: 'group1',
+        name: '管理层',
+        users: [
+          { id: 'user1', name: '张三' }
+        ]
+      },
+      {
+        id: 'group2',
+        name: 'IT部',
+        users: [
+          { id: 'user2', name: '李四' }
+        ]
+      },
+      {
+        id: 'group3',
+        name: '财务部',
+        users: [
+          { id: 'user3', name: '王五' },
+          { id: 'user5', name: '孙七' }
+        ]
+      },
+      {
+        id: 'group4',
+        name: '产品部',
+        users: [
+          { id: 'user4', name: '赵六' }
+        ]
+      }
+    ]);
+  }, []);
+
+  // Mock用户组和用户数据（用于权限分配等）
+  const mockUserGroups: UserGroup[] = userGroups;
 
   // 财务信息表字段
   const financialTableFields: TableField[] = [
@@ -164,9 +189,9 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
   ];
 
 
-  // 构建用户组/用户树数据
-  const buildUserTreeData = (groups: UserGroup[]): any[] => {
-    return groups.map(group => ({
+  // 构建用户组/用户树数据（用于权限分配模态框）
+  const userTreeData = useMemo(() => {
+    return userGroups.map(group => ({
       title: group.name,
       key: `group-${group.id}`,
       children: group.users?.map(user => ({
@@ -174,9 +199,7 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
         key: `user-${user.id}`
       }))
     }));
-  };
-
-  const userTreeData = buildUserTreeData(mockUserGroups);
+  }, [userGroups]);
 
   const userColumns = [
     {
@@ -222,34 +245,141 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
     { id: '4', name: '赵六', role: 'user', group: '产品部' }
   ];
 
-  const mockUserGroupsTree = [
+  // 处理编辑用户组名称
+  const handleEditGroupName = (group: UserGroup) => {
+    setCurrentEditingGroup(group);
+    setEditingGroupName(group.name);
+    setEditGroupModalVisible(true);
+  };
+
+  // 保存用户组名称
+  const handleSaveGroupName = () => {
+    if (!editingGroupName.trim()) {
+      message.warning('用户组名称不能为空');
+      return;
+    }
+    if (currentEditingGroup) {
+      setUserGroups(userGroups.map(group => 
+        group.id === currentEditingGroup.id 
+          ? { ...group, name: editingGroupName.trim() }
+          : group
+      ));
+      message.success('用户组名称已更新');
+      setEditGroupModalVisible(false);
+      setCurrentEditingGroup(null);
+      setEditingGroupName('');
+    }
+  };
+
+  // 处理管理用户组用户
+  const handleManageUsers = (group: UserGroup) => {
+    setCurrentEditingGroup(group);
+    setSelectedUserIds(group.users?.map(u => u.id) || []);
+    setManageUsersModalVisible(true);
+  };
+
+  // 保存用户组用户
+  const handleSaveGroupUsers = () => {
+    if (!currentEditingGroup) return;
+    
+    const selectedUsers = allUsers.filter(u => selectedUserIds.includes(u.id));
+    setUserGroups(userGroups.map(group => 
+      group.id === currentEditingGroup.id 
+        ? { ...group, users: selectedUsers }
+        : group
+    ));
+    message.success('用户组成员已更新');
+    setManageUsersModalVisible(false);
+    setCurrentEditingGroup(null);
+    setSelectedUserIds([]);
+  };
+
+  // 处理删除用户组
+  const handleDeleteGroup = (groupId: string) => {
+    setUserGroups(userGroups.filter(group => group.id !== groupId));
+    message.success('用户组已删除');
+  };
+
+  // 处理新建用户组
+  const handleCreateGroup = () => {
+    const newGroup: UserGroup = {
+      id: `group${Date.now()}`,
+      name: '新用户组',
+      users: []
+    };
+    setUserGroups([...userGroups, newGroup]);
+    setCurrentEditingGroup(newGroup);
+    setEditingGroupName('新用户组');
+    setEditGroupModalVisible(true);
+  };
+
+  // 用户组列表表格列定义
+  const groupColumns = [
     {
-      title: '管理层',
-      key: 'group1',
-      children: [
-        { title: '张三', key: 'user1' }
-      ]
+      title: '用户组名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200
     },
     {
-      title: 'IT部',
-      key: 'group2',
-      children: [
-        { title: '李四', key: 'user2' }
-      ]
+      title: '成员',
+      key: 'users',
+      render: (_: any, record: UserGroup) => (
+        <div>
+          {record.users && record.users.length > 0 ? (
+            <Space wrap>
+              {record.users.map(user => (
+                <Tag key={user.id}>{user.name}</Tag>
+              ))}
+            </Space>
+          ) : (
+            <span style={{ color: '#999' }}>暂无成员</span>
+          )}
+        </div>
+      )
     },
     {
-      title: '财务部',
-      key: 'group3',
-      children: [
-        { title: '王五', key: 'user3' }
-      ]
+      title: '成员数量',
+      key: 'userCount',
+      width: 100,
+      render: (_: any, record: UserGroup) => record.users?.length || 0
     },
     {
-      title: '产品部',
-      key: 'group4',
-      children: [
-        { title: '赵六', key: 'user4' }
-      ]
+      title: '操作',
+      key: 'action',
+      width: 250,
+      render: (_: any, record: UserGroup) => (
+        <Space>
+          <Button 
+            type="link" 
+            icon={<EditOutlined />}
+            onClick={() => handleEditGroupName(record)}
+          >
+            编辑名称
+          </Button>
+          <Button 
+            type="link" 
+            icon={<UserAddOutlined />}
+            onClick={() => handleManageUsers(record)}
+          >
+            管理用户
+          </Button>
+          <Popconfirm
+            title="确定要删除这个用户组吗？"
+            onConfirm={() => handleDeleteGroup(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      )
     }
   ];
 
@@ -384,11 +514,13 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
               children: (
                 <div>
                   <div style={{ marginBottom: '16px' }}>
-                    <Button type="primary">新建用户组</Button>
+                    <Button type="primary" onClick={handleCreateGroup}>新建用户组</Button>
                   </div>
-                  <Tree
-                    treeData={mockUserGroupsTree}
-                    defaultExpandAll
+                  <Table
+                    columns={groupColumns}
+                    dataSource={userGroups}
+                    rowKey="id"
+                    pagination={false}
                   />
                 </div>
               )
@@ -795,6 +927,83 @@ const PermissionManagement: React.FC<PermissionManagementProps> = ({ onBackToCha
               </Card>
             </div>
           </>
+        )}
+      </Modal>
+
+      {/* 编辑用户组名称模态框 */}
+      <Modal
+        title="编辑用户组名称"
+        open={editGroupModalVisible}
+        onOk={handleSaveGroupName}
+        onCancel={() => {
+          setEditGroupModalVisible(false);
+          setCurrentEditingGroup(null);
+          setEditingGroupName('');
+        }}
+        okText="保存"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', marginBottom: '8px' }}>用户组名称：</label>
+          <Input
+            value={editingGroupName}
+            onChange={(e) => setEditingGroupName(e.target.value)}
+            placeholder="请输入用户组名称"
+            onPressEnter={handleSaveGroupName}
+          />
+        </div>
+      </Modal>
+
+      {/* 管理用户组用户模态框 */}
+      <Modal
+        title={`管理用户组成员 - ${currentEditingGroup?.name || ''}`}
+        open={manageUsersModalVisible}
+        onOk={handleSaveGroupUsers}
+        onCancel={() => {
+          setManageUsersModalVisible(false);
+          setCurrentEditingGroup(null);
+          setSelectedUserIds([]);
+        }}
+        okText="保存"
+        cancelText="取消"
+        width={600}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', marginBottom: '8px' }}>选择用户：</label>
+          <Select
+            mode="multiple"
+            style={{ width: '100%' }}
+            placeholder="请选择要添加到用户组的用户"
+            value={selectedUserIds}
+            onChange={setSelectedUserIds}
+            showSearch
+            filterOption={(input, option) => {
+              const user = allUsers.find(u => u.id === option?.value);
+              return user?.name.toLowerCase().includes(input.toLowerCase()) || false;
+            }}
+          >
+            {allUsers.map(user => (
+              <Select.Option key={user.id} value={user.id}>
+                {user.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+        {selectedUserIds.length > 0 && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '12px', 
+            backgroundColor: '#f5f5f5', 
+            borderRadius: '4px' 
+          }}>
+            <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>已选用户：</div>
+            <Space wrap>
+              {selectedUserIds.map(userId => {
+                const user = allUsers.find(u => u.id === userId);
+                return user ? <Tag key={userId}>{user.name}</Tag> : null;
+              })}
+            </Space>
+          </div>
         )}
       </Modal>
     </div>
