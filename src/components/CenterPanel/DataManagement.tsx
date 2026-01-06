@@ -817,17 +817,30 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBackToChat }) => {
                           同步数据
                         </Button>
                       </Tooltip>
-                      <Tooltip title="同步数据库中的元数据">
+                      
+                    </Space>
+                  </div>
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ marginBottom: '16px' }}>同步任务列表</h3>
+                    <Table
+                      columns={taskColumns}
+                      dataSource={mockSyncTasks}
+                      rowKey="id"
+                      pagination={false}
+                    />
+                  </div>
+                  <div>
+                  <Tooltip title="同步数据库中的元数据">
                         <Button 
                           icon={<DatabaseOutlined />}
+                          style={{ marginBottom: '16px' }}
                           onClick={() => setNewDatabaseConnectionModalVisible(true)}
                         >
                           新建数据库连接
                         </Button>
                       </Tooltip>
-                    </Space>
                   </div>
-                  <div style={{ marginBottom: '24px' }}>
+                  <div >
                     <h3 style={{ marginBottom: '16px' }}>数据库连接列表</h3>
                     <Table
                       columns={[
@@ -865,15 +878,9 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBackToChat }) => {
                       pagination={false}
                     />
                   </div>
-                  <div>
-                    <h3 style={{ marginBottom: '16px' }}>同步任务列表</h3>
-                    <Table
-                      columns={taskColumns}
-                      dataSource={mockSyncTasks}
-                      rowKey="id"
-                      pagination={false}
-                    />
-                  </div>
+
+
+                  
                 </div>
               )
             },
