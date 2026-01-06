@@ -8,6 +8,7 @@ export interface KnowledgeBaseNode {
   status?: 'available' | 'building' | 'failed';
   fileType?: string;
   fileCount?: number; // 目录下的文件数量
+  databaseConnections?: string[]; // 关联的数据库连接ID列表
 }
 
 export interface Agent {
@@ -32,6 +33,7 @@ export interface DataSource {
 export interface SyncTask {
   id: string;
   name: string;
+  connect_type?: string;
   status: 'running' | 'success' | 'failed';
   progress: number;
   startTime: string;
@@ -75,6 +77,32 @@ export interface KnowledgeBuildTask {
   processingType: 'structured' | 'unstructured' | 'both';
 }
 
+export interface DatabaseConnection {
+  id: string;
+  connectionName: string;
+  connectorId: string;
+  connectorName: string;
+  databaseName: string;
+  tableName: string;
+  createTime: string;
+}
+
+export interface ConnectorSourceDirectory {
+  connectorId: string;
+  directories: {
+    id: string;
+    name: string;
+    parentId: string | null;
+    level: number;
+    files?: {
+      id: string;
+      name: string;
+      size: number;
+      fileType: string;
+    }[];
+  }[];
+}
+
 // Mock知识库数据
 export const mockKnowledgeBases: KnowledgeBaseNode[] = [
   {
@@ -88,6 +116,7 @@ export const mockKnowledgeBases: KnowledgeBaseNode[] = [
         name: '财务通用知识库',
         type: 'directory',
         fileCount: 2,
+        databaseConnections: ['db-conn-1'], // 关联财务数据库连接
         children: [
           { id: 'kb1-dir1-file1', name: '财务管理制度.pdf', type: 'file', fileType: 'pdf' },
           { id: 'kb1-dir1-file2', name: '报销流程说明.docx', type: 'file', fileType: 'docx' }
@@ -227,7 +256,7 @@ export const mockAgents: Agent[] = [
 export const mockDataSources: DataSource[] = [
   { id: 'ds1', name: '飞书文档库', type: 'feishu', status: 'connected' },
   { id: 'ds2', name: 'OSS存储', type: 'oss', status: 'connected' },
-  { id: 'ds3', name: 'MySQL数据库', type: 'database', status: 'disconnected' }
+  { id: 'ds3', name: 'MySQL数据库', type: 'database', status: 'connected' }
 ];
 
 // Mock同步任务
@@ -343,6 +372,162 @@ export const mockFileDirectories: FileDirectory[] = [
     level: 3,
     files: [
       { id: 'file7', name: '2024年财务政策.pdf', directoryId: 'dir1-1-1', size: 1024000, fileType: 'pdf', uploadTime: '2024-01-15 14:00:00', source: 'manual' }
+    ]
+  }
+];
+
+// Mock数据库连接数据
+export const mockDatabaseConnections: DatabaseConnection[] = [
+  {
+    id: 'db-conn-1',
+    connectionName: '财务数据库连接',
+    connectorId: 'ds3',
+    connectorName: 'MySQL数据库',
+    databaseName: 'finance_db',
+    tableName: 'revenue_data',
+    createTime: '2024-01-15 10:00:00'
+  }
+];
+
+// Mock连接器源目录数据
+export const mockConnectorSourceDirectories: ConnectorSourceDirectory[] = [
+  {
+    connectorId: 'ds1', // 飞书文档库
+    directories: [
+      { id: 'source-root-ds1', name: 'root', parentId: null, level: 0 },
+      { 
+        id: 'source-dir-ds1-1', 
+        name: '产品文档', 
+        parentId: 'source-root-ds1', 
+        level: 1,
+        files: [
+          { id: 'source-file-ds1-1-1', name: '产品介绍.pdf', size: 2048000, fileType: 'pdf' },
+          { id: 'source-file-ds1-1-2', name: '功能说明.docx', size: 512000, fileType: 'docx' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds1-2', 
+        name: '技术文档', 
+        parentId: 'source-root-ds1', 
+        level: 1,
+        files: [
+          { id: 'source-file-ds1-2-1', name: '技术架构图.png', size: 1024000, fileType: 'png' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds1-3', 
+        name: '会议纪要', 
+        parentId: 'source-root-ds1', 
+        level: 1,
+        files: [
+          { id: 'source-file-ds1-3-1', name: '2024年1月会议记录.docx', size: 256000, fileType: 'docx' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds1-1-1', 
+        name: '用户手册', 
+        parentId: 'source-dir-ds1-1', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds1-1-1-1', name: '用户操作手册.pdf', size: 3072000, fileType: 'pdf' },
+          { id: 'source-file-ds1-1-1-2', name: '常见问题解答.docx', size: 384000, fileType: 'docx' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds1-1-2', 
+        name: 'API文档', 
+        parentId: 'source-dir-ds1-1', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds1-1-2-1', name: 'API接口文档.pdf', size: 1536000, fileType: 'pdf' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds1-2-1', 
+        name: '架构设计', 
+        parentId: 'source-dir-ds1-2', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds1-2-1-1', name: '系统架构设计.docx', size: 768000, fileType: 'docx' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds1-2-2', 
+        name: '开发规范', 
+        parentId: 'source-dir-ds1-2', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds1-2-2-1', name: '代码规范.pdf', size: 512000, fileType: 'pdf' }
+        ]
+      }
+    ]
+  },
+  {
+    connectorId: 'ds2', // OSS存储
+    directories: [
+      { id: 'source-root-ds2', name: 'root', parentId: null, level: 0 },
+      { 
+        id: 'source-dir-ds2-1', 
+        name: '备份数据', 
+        parentId: 'source-root-ds2', 
+        level: 1,
+        files: [
+          { id: 'source-file-ds2-1-1', name: '数据库备份_20240115.sql', size: 52428800, fileType: 'sql' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds2-2', 
+        name: '日志文件', 
+        parentId: 'source-root-ds2', 
+        level: 1,
+        files: [
+          { id: 'source-file-ds2-2-1', name: 'app.log', size: 10485760, fileType: 'log' },
+          { id: 'source-file-ds2-2-2', name: 'error.log', size: 2097152, fileType: 'log' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds2-3', 
+        name: '静态资源', 
+        parentId: 'source-root-ds2', 
+        level: 1
+      },
+      { 
+        id: 'source-dir-ds2-1-1', 
+        name: '数据库备份', 
+        parentId: 'source-dir-ds2-1', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds2-1-1-1', name: 'mysql_backup_20240115.sql', size: 104857600, fileType: 'sql' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds2-1-2', 
+        name: '文件备份', 
+        parentId: 'source-dir-ds2-1', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds2-1-2-1', name: 'files_backup_20240115.zip', size: 52428800, fileType: 'zip' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds2-3-1', 
+        name: '图片资源', 
+        parentId: 'source-dir-ds2-3', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds2-3-1-1', name: 'banner.jpg', size: 2048000, fileType: 'jpg' },
+          { id: 'source-file-ds2-3-1-2', name: 'logo.png', size: 512000, fileType: 'png' }
+        ]
+      },
+      { 
+        id: 'source-dir-ds2-3-2', 
+        name: '视频资源', 
+        parentId: 'source-dir-ds2-3', 
+        level: 2,
+        files: [
+          { id: 'source-file-ds2-3-2-1', name: 'intro_video.mp4', size: 52428800, fileType: 'mp4' }
+        ]
+      }
     ]
   }
 ];

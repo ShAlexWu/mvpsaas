@@ -127,7 +127,6 @@ const App: React.FC = () => {
         <RightPanel
           selectedNodeId={selectedKnowledgeBaseNode}
           onNodeSelect={handleNodeSelect}
-          onShowBuildTasks={handleShowBuildTasks}
         />
       </Sider>
     </Layout>

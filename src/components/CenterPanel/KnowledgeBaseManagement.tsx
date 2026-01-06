@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Button, Card, Space, Tag, Table, Modal, message, Descriptions, Tabs, Tree, Select, Radio, Checkbox, Input } from 'antd';
-import { EyeOutlined, DeleteOutlined, BuildOutlined, FolderOutlined, FileOutlined, DatabaseOutlined } from '@ant-design/icons';
-import { mockKnowledgeBases, mockAgents, mockFileDirectories } from '../../mock/data';
-import type { KnowledgeBaseNode, FileDirectory, FileItem } from '../../mock/data';
+import { EyeOutlined, DeleteOutlined, FolderOutlined, FileOutlined, DatabaseOutlined, PlusOutlined } from '@ant-design/icons';
+import { mockKnowledgeBases, mockAgents, mockFileDirectories, mockDatabaseConnections } from '../../mock/data';
+import type { KnowledgeBaseNode, FileDirectory, FileItem, DatabaseConnection } from '../../mock/data';
 
 interface KnowledgeBaseManagementProps {
   selectedNodeId: string | null;
@@ -18,6 +18,11 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
   const [selectedFileDirectoryId, setSelectedFileDirectoryId] = useState<string>('dir-root');
   const [selectedFilesForBuild, setSelectedFilesForBuild] = useState<string[]>([]);
   const [taskName, setTaskName] = useState('');
+  const [addFileModalVisible, setAddFileModalVisible] = useState(false);
+  const [selectedFilesToAdd, setSelectedFilesToAdd] = useState<string[]>([]);
+  const [selectedDirForAddFile, setSelectedDirForAddFile] = useState<string>('dir-root');
+  const [selectedDatabaseConnections, setSelectedDatabaseConnections] = useState<string[]>([]);
+  const [addSourceType, setAddSourceType] = useState<'file' | 'database'>('file');
 
   // 查找选中的节点
   const findNode = (nodes: KnowledgeBaseNode[], id: string): KnowledgeBaseNode | null => {
@@ -66,6 +71,18 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
   };
 
   const files = getFilesInDirectory(selectedNode);
+
+  // 获取当前目录关联的数据库连接
+  const getDatabaseConnectionsForDirectory = (node: KnowledgeBaseNode | null): DatabaseConnection[] => {
+    if (!node || !node.databaseConnections || node.databaseConnections.length === 0) {
+      return [];
+    }
+    return mockDatabaseConnections.filter(conn => 
+      node.databaseConnections?.includes(conn.id)
+    );
+  };
+
+  const databaseConnections = getDatabaseConnectionsForDirectory(selectedNode);
 
   // 文件列表列定义
   const fileColumns = [
@@ -208,6 +225,41 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
     setTaskName('');
   };
 
+  const handleAddFiles = () => {
+    if (addSourceType === 'file') {
+      if (selectedFilesToAdd.length === 0) {
+        message.warning('请至少选择一个文件');
+        return;
+      }
+    } else {
+      if (selectedDatabaseConnections.length === 0) {
+        message.warning('请至少选择一个数据库连接');
+        return;
+      }
+    }
+    
+    if (!selectedNode) {
+      message.warning('请先选择知识库目录');
+      return;
+    }
+    if (selectedNode.type === 'file') {
+      message.warning('无法向文件节点添加知识');
+      return;
+    }
+    
+    if (addSourceType === 'file') {
+      message.success(`已添加 ${selectedFilesToAdd.length} 个文件到知识库`);
+    } else {
+      message.success(`已添加 ${selectedDatabaseConnections.length} 个数据库连接到知识库`);
+    }
+    
+    setAddFileModalVisible(false);
+    setSelectedFilesToAdd([]);
+    setSelectedDirForAddFile('dir-root');
+    setSelectedDatabaseConnections([]);
+    setAddSourceType('file');
+  };
+
   if (!selectedNode) {
     return (
       <div style={{ 
@@ -253,15 +305,7 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
           )}
         </div>
         <Space>
-          {!isFile && (
-            <Button 
-              type="primary" 
-              icon={<BuildOutlined />}
-              onClick={() => setBuildVisible(true)}
-            >
-              构建知识
-            </Button>
-          )}
+          
           <Button onClick={onBackToChat}>返回系统对话</Button>
         </Space>
       </div>
@@ -328,21 +372,95 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
             },
             {
               key: 'files',
-              label: '文件列表',
+              label: '知识列表',
               children: (
                 <div>
-                  {files.length > 0 ? (
-                    <Table
-                      columns={fileColumns}
-                      dataSource={files}
-                      rowKey="id"
-                      pagination={false}
-                    />
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                      {isFile ? '当前节点是文件，无子文件' : '当前目录下暂无文件'}
+                  <div style={{ marginBottom: '16px' }}>
+                    <Button 
+                      type="primary" 
+                      icon={<PlusOutlined />}
+                      onClick={() => setAddFileModalVisible(true)}
+                    >
+                      添加知识
+                    </Button>
+                  </div>
+                  
+                  {/* 数据库连接信息 */}
+                  {databaseConnections.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: 'bold' }}>
+                        数据库连接
+                      </h3>
+                      <Table
+                        columns={[
+                          {
+                            title: '连接名称',
+                            dataIndex: 'connectionName',
+                            key: 'connectionName',
+                            render: (text: string) => (
+                              <Space>
+                                <DatabaseOutlined style={{ color: '#1890ff' }} />
+                                {text}
+                              </Space>
+                            )
+                          },
+                          {
+                            title: '连接器',
+                            dataIndex: 'connectorName',
+                            key: 'connectorName'
+                          },
+                          {
+                            title: '数据库',
+                            dataIndex: 'databaseName',
+                            key: 'databaseName'
+                          },
+                          {
+                            title: '表名',
+                            dataIndex: 'tableName',
+                            key: 'tableName'
+                          },
+                          {
+                            title: '创建时间',
+                            dataIndex: 'createTime',
+                            key: 'createTime'
+                          },
+                          {
+                            title: '操作',
+                            key: 'action',
+                            render: (_: any) => (
+                              <Space>
+                                <Button type="link" size="small">查看详情</Button>
+                                <Button type="link" size="small" danger>移除</Button>
+                              </Space>
+                            )
+                          }
+                        ]}
+                        dataSource={databaseConnections}
+                        rowKey="id"
+                        pagination={false}
+                        size="small"
+                      />
                     </div>
                   )}
+                  
+                  {/* 文件列表 */}
+                  <div>
+                    <h3 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: 'bold' }}>
+                      文件列表
+                    </h3>
+                    {files.length > 0 ? (
+                      <Table
+                        columns={fileColumns}
+                        dataSource={files}
+                        rowKey="id"
+                        pagination={false}
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                        {isFile ? '当前节点是文件，无子文件' : '当前目录下暂无文件'}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             },
@@ -577,6 +695,219 @@ const KnowledgeBaseManagement: React.FC<KnowledgeBaseManagementProps> = ({ selec
           <div>• 非结构化数据（doc、pdf、png等）默认非结构化处理</div>
           <div>• 结构化数据（csv、xlsx等）默认结构化处理</div>
         </div>
+      </Modal>
+
+      {/* 添加文件模态框 */}
+      <Modal
+        title=""
+        open={addFileModalVisible}
+        onOk={handleAddFiles}
+        onCancel={() => {
+          setAddFileModalVisible(false);
+          setSelectedFilesToAdd([]);
+          setSelectedDirForAddFile('dir-root');
+          setSelectedDatabaseConnections([]);
+          setAddSourceType('file');
+        }}
+        width={800}
+      >
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>选择知识来源：</div>
+          <Radio.Group 
+            value={addSourceType} 
+            onChange={(e) => {
+              setAddSourceType(e.target.value);
+              setSelectedFilesToAdd([]);
+              setSelectedDatabaseConnections([]);
+            }}
+          >
+            <Radio value="file">文件</Radio>
+            <Radio value="database">数据库连接</Radio>
+          </Radio.Group>
+        </div>
+        
+        {addSourceType === 'file' ? (
+          <>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>选择知识对应的文件：</div>
+              <div style={{ display: 'flex', gap: '16px', border: '1px solid #e8e8e8', borderRadius: '4px', padding: '16px' }}>
+                <div style={{ width: '300px', borderRight: '1px solid #e8e8e8', paddingRight: '16px' }}>
+                  <Tree
+                    treeData={fileDirectoryTreeData}
+                    defaultExpandAll
+                    selectedKeys={[selectedDirForAddFile]}
+                    onSelect={(selectedKeys) => {
+                      if (selectedKeys.length > 0) {
+                        setSelectedDirForAddFile(selectedKeys[0] as string);
+                      }
+                    }}
+                    showIcon
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
+                    当前目录：{getFileDirectoryPath(selectedDirForAddFile)}
+                  </div>
+                  <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+                    <Checkbox.Group
+                      value={selectedFilesToAdd}
+                      onChange={(values) => setSelectedFilesToAdd(values as string[])}
+                      style={{ width: '100%' }}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        {getFilesInFileDirectory(selectedDirForAddFile).map(file => (
+                          <div key={file.id} style={{ 
+                            padding: '8px', 
+                            border: '1px solid #e8e8e8', 
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <Checkbox value={file.id} />
+                            <FileOutlined style={{ color: '#52c41a' }} />
+                            <span>{file.name}</span>
+                            <Tag style={{ marginLeft: 'auto' }}>{file.fileType.toUpperCase()}</Tag>
+                          </div>
+                        ))}
+                        {getFilesInFileDirectory(selectedDirForAddFile).length === 0 && (
+                          <div style={{ color: '#999', textAlign: 'center', padding: '20px' }}>
+                            当前目录下暂无文件
+                          </div>
+                        )}
+                      </Space>
+                    </Checkbox.Group>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 已选文件列表 */}
+            {selectedFilesToAdd.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>已选文件：</div>
+                <div style={{ 
+                  border: '1px solid #e8e8e8', 
+                  borderRadius: '4px', 
+                  padding: '12px',
+                  maxHeight: '200px',
+                  overflow: 'auto'
+                }}>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {selectedFilesToAdd.map(fileId => {
+                      const file = getFileInfo(fileId);
+                      if (!file) return null;
+                      return (
+                        <div key={fileId} style={{ 
+                          padding: '8px', 
+                          backgroundColor: '#f5f5f5', 
+                          borderRadius: '4px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <FileOutlined style={{ color: '#52c41a' }} />
+                            <span>{file.name}</span>
+                            <Tag>{file.fileType.toUpperCase()}</Tag>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#999' }}>
+                            来自：{getFileDirectoryPathById(file.directoryId)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Space>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>选择数据库连接：</div>
+            <div style={{ 
+              border: '1px solid #e8e8e8', 
+              borderRadius: '4px', 
+              padding: '12px',
+              maxHeight: '400px',
+              overflow: 'auto'
+            }}>
+              <Checkbox.Group
+                value={selectedDatabaseConnections}
+                onChange={(values) => setSelectedDatabaseConnections(values as string[])}
+                style={{ width: '100%' }}
+              >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {mockDatabaseConnections.map(conn => (
+                    <div key={conn.id} style={{ 
+                      padding: '8px', 
+                      border: '1px solid #e8e8e8', 
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <Checkbox value={conn.id} />
+                      <DatabaseOutlined style={{ color: '#1890ff' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold' }}>{conn.connectionName}</div>
+                        <div style={{ fontSize: '12px', color: '#999' }}>
+                          {conn.connectorName} - {conn.databaseName}.{conn.tableName}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {mockDatabaseConnections.length === 0 && (
+                    <div style={{ color: '#999', textAlign: 'center', padding: '20px' }}>
+                      暂无数据库连接，请先在数据同步页面创建数据库连接
+                    </div>
+                  )}
+                </Space>
+              </Checkbox.Group>
+            </div>
+          </div>
+        )}
+        
+        {/* 已选数据库连接列表 */}
+        {addSourceType === 'database' && selectedDatabaseConnections.length > 0 && (
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>已选数据库连接：</div>
+            <div style={{ 
+              border: '1px solid #e8e8e8', 
+              borderRadius: '4px', 
+              padding: '12px',
+              maxHeight: '200px',
+              overflow: 'auto'
+            }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {selectedDatabaseConnections.map(connId => {
+                  const conn = mockDatabaseConnections.find(c => c.id === connId);
+                  if (!conn) return null;
+                  return (
+                    <div key={connId} style={{ 
+                      padding: '8px', 
+                      backgroundColor: '#f5f5f5', 
+                      borderRadius: '4px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <DatabaseOutlined style={{ color: '#1890ff' }} />
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>{conn.connectionName}</div>
+                          <div style={{ fontSize: '12px', color: '#999' }}>
+                            {conn.connectorName} - {conn.databaseName}.{conn.tableName}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </Space>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
